@@ -1,8 +1,10 @@
 package com.duke.android.test38criminalintent;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.view.LayoutInflater;
@@ -10,11 +12,14 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.CheckBox;
 import android.widget.TextView;
+import android.widget.Toast;
 
 
 import java.util.List;
 
 public class CrimeListFragment extends Fragment {
+
+
 
     private RecyclerView mCrimeRecycleView;
     private CrimeAdapter mAdapter;
@@ -22,7 +27,7 @@ public class CrimeListFragment extends Fragment {
     @Nullable
     @Override
     public View onCreateView(LayoutInflater inflater, @Nullable ViewGroup container, @Nullable Bundle savedInstanceState) {
-        View view = inflater.inflate(R.layout.fragment_crime_list,container,false);
+        View view = inflater.inflate(R.layout.fragment_crime_list, container, false);
 
         mCrimeRecycleView = (RecyclerView) view.findViewById(R.id.crime_recycler_view);
         mCrimeRecycleView.setLayoutManager(new LinearLayoutManager(getActivity()));
@@ -32,28 +37,43 @@ public class CrimeListFragment extends Fragment {
         return view;
     }
 
+
+    /**
+     * CrimeListActivity恢复运行后，操作系统会发出调用onResume()生命周期方法的指令
+     */
+    @Override
+    public void onResume() {
+        super.onResume();
+        updateUI();
+    }
+
     private void updateUI() {
         CrimeLab crimeLab = CrimeLab.getInstance(getActivity());
         //创建CrimeLab的单例
         List<Crime> crimes = crimeLab.getCrimes();
-        mAdapter = new CrimeAdapter(crimes);
-        mCrimeRecycleView.setAdapter(mAdapter);
+        if (mAdapter == null) {
+            mAdapter = new CrimeAdapter(crimes);
+            mCrimeRecycleView.setAdapter(mAdapter);
+        }else{
+            mAdapter.notifyDataSetChanged();
+        }
+
     }
 
     /**
      * 创建ViewHolder内部类
      * RecyclerView本身不会创建视图，它创建的是ViewHolder，而ViewHolder引用着一个个itemView
      */
-    private class CrimeHolder extends RecyclerView.ViewHolder {
+    private class CrimeHolder extends RecyclerView.ViewHolder implements View.OnClickListener {
 
-//        public TextView mTitleView;
+        //        public TextView mTitleView;
         private TextView mTitleTextView;
         private TextView mDateTextView;
         private CheckBox mSolvedCheckBox;
 
         private Crime mCrime;
 
-        public void bindCrime(Crime crime){
+        public void bindCrime(Crime crime) {
             mCrime = crime;
             mTitleTextView.setText(mCrime.getmTitle());
             mDateTextView.setText(mCrime.getmDate().toString());
@@ -64,6 +84,7 @@ public class CrimeListFragment extends Fragment {
         public CrimeHolder(View itemView) {
             super(itemView);
 
+            itemView.setOnClickListener(this);
 //            mTitleView = (TextView) itemView;
             mTitleTextView = (TextView) itemView.findViewById(R.id.list_item_crime_title_text_view);
             mDateTextView = (TextView) itemView.findViewById(R.id.list_item_crime_date_text_view);
@@ -71,16 +92,25 @@ public class CrimeListFragment extends Fragment {
             //通过保存findViewById（int）方法的成果，能够把宝贵的时间花在onCreateViewHolder上
             //因此，等到调用onBindViewHolder的时候一切已准备就绪
         }
+
+        @Override
+        public void onClick(View view) {
+//            Toast.makeText(getActivity(),mCrime.getmTitle()+"clicked",Toast.LENGTH_SHORT).show();
+//            Intent intent = new Intent(getActivity(),CrimeActivity.class);
+            Intent intent = CrimeActivity.newIntent(getActivity(), mCrime.getmId());
+            startActivity(intent);
+        }
     }
 
     /**
      * 创建adapter内部类
      * adapter负责创建必要的ViewHolder，绑定ViewHolder至模型层数据
      */
-    private class CrimeAdapter extends RecyclerView.Adapter<CrimeHolder>{
+    private class CrimeAdapter extends RecyclerView.Adapter<CrimeHolder> {
 
         private List<Crime> mCrimes;
-        private CrimeAdapter(List<Crime> mCrimes){
+
+        private CrimeAdapter(List<Crime> mCrimes) {
             this.mCrimes = mCrimes;
 
         }
@@ -88,12 +118,13 @@ public class CrimeListFragment extends Fragment {
         @Override
         public CrimeHolder onCreateViewHolder(ViewGroup parent, int viewType) {
             LayoutInflater layoutInflater = LayoutInflater.from(getActivity());
-            View view = layoutInflater.inflate(R.layout.list_item_crime,parent,false);
+            View view = layoutInflater.inflate(R.layout.list_item_crime, parent, false);
             return new CrimeHolder(view);
         }
 
         /**
          * 把ViewHolder的View视图和模型层数据绑定起来
+         *
          * @param holder
          * @param position 索引位置
          */
@@ -109,6 +140,8 @@ public class CrimeListFragment extends Fragment {
         public int getItemCount() {
             return mCrimes.size();
         }
+
+
     }
 
 }
